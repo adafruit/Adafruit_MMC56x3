@@ -200,11 +200,11 @@ bool Adafruit_MMC5603::getEvent(sensors_event_t *event) {
       delay(5);
     }
   }
-  uint8_t buffer[8];
+  uint8_t buffer[9];
   buffer[0] = MMC56X3_OUT_X_L;
  
   // read 8 bytes!
-  i2c_dev->write_then_read(buffer, 1, buffer, 8);
+  i2c_dev->write_then_read(buffer, 1, buffer, 9);
 
   x = (uint32_t)buffer[0] << 12 | (uint32_t)buffer[1] << 4 | 
     (uint32_t)buffer[6] >> 4;
