@@ -30,9 +30,7 @@
     -----------------------------------------------------------------------*/
 #define MMC56X3_DEFAULT_ADDRESS 0x30   //!< Default address
 #define MMC56X3_CHIP_ID 0x10       //!< Chip ID from WHO_AM_I register
-#define LIS2MDL_MAG_LSB 1.5 //!< Sensitivity
-#define LIS2MDL_MILLIGAUSS_TO_MICROTESLA                                       \
-  0.1 //!< Conversion rate of Milligauss to Microtesla
+
 /*=========================================================================*/
 
 /*!
@@ -48,7 +46,7 @@ typedef enum {
   MMC56X3_OUT_X_L = 0x00,
   MMC5603_ODR_REG = 0x1A,
 
-} lis2mdl_register_t;
+} mmc56x3_register_t;
 /*=========================================================================*/
 
 /**************************************************************************/
@@ -62,10 +60,9 @@ public:
 
   bool begin(uint8_t i2c_addr = MMC56X3_DEFAULT_ADDRESS, TwoWire *wire = &Wire);
 
-  uint16_t getDataRate();
-  bool setDataRate(uint16_t rate);
   bool getEvent(sensors_event_t *);
   void getSensor(sensor_t *);
+
   void reset(void);
   void magnetSetReset(void) ;
 
@@ -74,10 +71,11 @@ public:
 
   float readTemperature(void);
 
+  uint16_t getDataRate();
+  void setDataRate(uint16_t rate);
+
 
 private:
-  bool _init(void);
-
   Adafruit_BusIO_Register
     *_ctrl0_reg=NULL, 
     *_ctrl1_reg=NULL, 
@@ -92,8 +90,6 @@ private:
   int32_t z; ///< z-axis raw data
 
   int32_t _sensorID;
-
-  void read(void);
 
   Adafruit_I2CDevice *i2c_dev = NULL;
 };

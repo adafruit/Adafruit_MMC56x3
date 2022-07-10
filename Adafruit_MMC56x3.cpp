@@ -36,27 +36,6 @@
 /***************************************************************************
  MAGNETOMETER
  ***************************************************************************/
-/***************************************************************************
- PRIVATE FUNCTIONS
- ***************************************************************************/
-
-/**************************************************************************/
-/*!
-    @brief  Reads the raw data from the sensor
-*/
-/**************************************************************************/
-void Adafruit_MMC5603::read() {
-
-  Adafruit_BusIO_Register data_reg = Adafruit_BusIO_Register(
-      i2c_dev, LIS2MDL_OUTX_L_REG, 6);
-
-  uint16_t buffer[3];
-  data_reg.read((uint8_t *)buffer, 6);
-
-  x = buffer[0];
-  y = buffer[1];
-  z = buffer[2];
-}
 
 /***************************************************************************
  CONSTRUCTOR
@@ -64,7 +43,7 @@ void Adafruit_MMC5603::read() {
 
 /**************************************************************************/
 /*!
-    @brief  Instantiates a new Adafruit_LIS2MDL class
+    @brief  Instantiates a new Adafruit_MMC5603 class
     @param sensorID an option ID to differentiate the sensor from others
 */
 /**************************************************************************/
@@ -264,11 +243,11 @@ void Adafruit_MMC5603::setDataRate(uint16_t rate) {
     Adafruit_BusIO_Register(i2c_dev, MMC5603_ODR_REG);
 
   if (rate == 1000) {
-    odr_rate.write(255);
+    odr_reg.write(255);
     _ctrl2_cache |= 0x80;  // turn on hpower bit
     _ctrl2_reg->write(_ctrl2_cache);
   } else {
-    odr_rate.write(rate);
+    odr_reg.write(rate);
     _ctrl2_cache &= ~0x80;  // turn off hpower bit
     _ctrl2_reg->write(_ctrl2_cache);
   }
