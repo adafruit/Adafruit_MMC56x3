@@ -68,7 +68,7 @@ Adafruit_MMC5603::Adafruit_MMC5603(int32_t sensorID) {
  *    @return True if initialization was successful, otherwise false.
  */
 bool Adafruit_MMC5603::begin(uint8_t i2c_address, TwoWire *wire) {
-  delete(i2c_dev);
+  delete (i2c_dev);
   if (!i2c_dev) {
     i2c_dev = new Adafruit_I2CDevice(i2c_address, wire);
   }
@@ -78,8 +78,8 @@ bool Adafruit_MMC5603::begin(uint8_t i2c_address, TwoWire *wire) {
   }
 
   // Check connection
-  Adafruit_BusIO_Register chip_id = 
-    Adafruit_BusIO_Register(i2c_dev, MMC56X3_PRODUCT_ID);
+  Adafruit_BusIO_Register chip_id =
+      Adafruit_BusIO_Register(i2c_dev, MMC56X3_PRODUCT_ID);
 
   // make sure we're talking to the right chip
   if (chip_id.read() != MMC56X3_CHIP_ID) {
@@ -87,13 +87,13 @@ bool Adafruit_MMC5603::begin(uint8_t i2c_address, TwoWire *wire) {
     return false;
   }
 
-  delete(_ctrl0_reg);
+  delete (_ctrl0_reg);
   _ctrl0_reg = new Adafruit_BusIO_Register(i2c_dev, MMC56X3_CTRL0_REG);
-  delete(_ctrl1_reg);
+  delete (_ctrl1_reg);
   _ctrl1_reg = new Adafruit_BusIO_Register(i2c_dev, MMC56X3_CTRL1_REG);
-  delete(_ctrl2_reg);
+  delete (_ctrl2_reg);
   _ctrl2_reg = new Adafruit_BusIO_Register(i2c_dev, MMC56X3_CTRL2_REG);
-  delete(_status_reg);
+  delete (_status_reg);
   _status_reg = new Adafruit_BusIO_Register(i2c_dev, MMC56X3_STATUS_REG);
 
   reset();
@@ -131,9 +131,9 @@ void Adafruit_MMC5603::magnetSetReset(void) {
 void Adafruit_MMC5603::setContinuousMode(bool mode) {
   if (mode) {
     _ctrl0_reg->write(0x80); // turn on cmm_freq_en bit
-    _ctrl2_cache |= 0x10;  // turn on cmm_en bit
+    _ctrl2_cache |= 0x10;    // turn on cmm_en bit
   } else {
-    _ctrl2_cache &= ~0x10;  // turn off cmm_en bit
+    _ctrl2_cache &= ~0x10; // turn off cmm_en bit
   }
   _ctrl2_reg->write(_ctrl2_cache);
 }
@@ -144,13 +144,12 @@ void Adafruit_MMC5603::setContinuousMode(bool mode) {
     @returns True for continuous, False for one-shot
 */
 /**************************************************************************/
-bool Adafruit_MMC5603::isContinuousMode(void) {
-  return _ctrl2_cache & 0x10;
-}
+bool Adafruit_MMC5603::isContinuousMode(void) { return _ctrl2_cache & 0x10; }
 
 /**************************************************************************/
 /*!
-    @brief Read the temperature from onboard sensor - must not be in continuous mode for this to function it seems
+    @brief Read the temperature from onboard sensor - must not be in continuous
+   mode for this to function it seems
     @returns Floating point temp in C, or NaN if sensor is in continuous mode
 */
 /**************************************************************************/
@@ -161,22 +160,21 @@ float Adafruit_MMC5603::readTemperature(void) {
   _ctrl0_reg->write(0x02); // TM_T trigger
 
   Adafruit_BusIO_RegisterBits temp_read_done =
-    Adafruit_BusIO_RegisterBits(_status_reg, 1, 7);
-  
-  while (! temp_read_done.read()) {
+      Adafruit_BusIO_RegisterBits(_status_reg, 1, 7);
+
+  while (!temp_read_done.read()) {
     delay(5);
   }
 
-  Adafruit_BusIO_Register temp_data = 
-    Adafruit_BusIO_Register(i2c_dev, MMC56X3_OUT_TEMP);
+  Adafruit_BusIO_Register temp_data =
+      Adafruit_BusIO_Register(i2c_dev, MMC56X3_OUT_TEMP);
 
   float temp = temp_data.read();
   temp *= 0.8; //  0.8*C / LSB
-  temp -= 75; //  0 value is -75
+  temp -= 75;  //  0 value is -75
 
   return temp;
 }
-
 
 /**************************************************************************/
 /*!
@@ -191,27 +189,27 @@ bool Adafruit_MMC5603::getEvent(sensors_event_t *event) {
   memset(event, 0, sizeof(sensors_event_t));
 
   /* Read new data */
-  if (! isContinuousMode()) {
+  if (!isContinuousMode()) {
     _ctrl0_reg->write(0x01); // TM_M trigger
 
     Adafruit_BusIO_RegisterBits mag_read_done =
-      Adafruit_BusIO_RegisterBits(_status_reg, 1, 6);
-    while (! mag_read_done.read()) {
+        Adafruit_BusIO_RegisterBits(_status_reg, 1, 6);
+    while (!mag_read_done.read()) {
       delay(5);
     }
   }
   uint8_t buffer[9];
   buffer[0] = MMC56X3_OUT_X_L;
- 
+
   // read 8 bytes!
   i2c_dev->write_then_read(buffer, 1, buffer, 9);
 
-  x = (uint32_t)buffer[0] << 12 | (uint32_t)buffer[1] << 4 | 
-    (uint32_t)buffer[6] >> 4;
+  x = (uint32_t)buffer[0] << 12 | (uint32_t)buffer[1] << 4 |
+      (uint32_t)buffer[6] >> 4;
   y = (uint32_t)buffer[2] << 12 | (uint32_t)buffer[3] << 4 |
-    (uint32_t)buffer[7] >> 4;
-  z = (uint32_t)buffer[4] << 12 | (uint32_t)buffer[5] << 4 | 
-    (uint32_t)buffer[8] >> 4;
+      (uint32_t)buffer[7] >> 4;
+  z = (uint32_t)buffer[4] << 12 | (uint32_t)buffer[5] << 4 |
+      (uint32_t)buffer[8] >> 4;
   // fix center offsets
   x -= (uint32_t)1 << 19;
   y -= (uint32_t)1 << 19;
@@ -221,9 +219,9 @@ bool Adafruit_MMC5603::getEvent(sensors_event_t *event) {
   event->sensor_id = _sensorID;
   event->type = SENSOR_TYPE_MAGNETIC_FIELD;
   event->timestamp = millis();
-  event->magnetic.x = (float)x * 0.00625;  // scale to uT by LSB in datasheet
+  event->magnetic.x = (float)x * 0.00625; // scale to uT by LSB in datasheet
   event->magnetic.y = (float)y * 0.00625;
-  event->magnetic.z =  (float)z * 0.00625;
+  event->magnetic.z = (float)z * 0.00625;
 
   return true;
 }
@@ -236,19 +234,20 @@ bool Adafruit_MMC5603::getEvent(sensors_event_t *event) {
 /**************************************************************************/
 void Adafruit_MMC5603::setDataRate(uint16_t rate) {
   // only 0~255 and 1000 are valid, so just move any high rates to 1000
-  if (rate > 255) rate = 1000;
+  if (rate > 255)
+    rate = 1000;
   _odr_cache = rate;
 
-  Adafruit_BusIO_Register odr_reg = 
-    Adafruit_BusIO_Register(i2c_dev, MMC5603_ODR_REG);
+  Adafruit_BusIO_Register odr_reg =
+      Adafruit_BusIO_Register(i2c_dev, MMC5603_ODR_REG);
 
   if (rate == 1000) {
     odr_reg.write(255);
-    _ctrl2_cache |= 0x80;  // turn on hpower bit
+    _ctrl2_cache |= 0x80; // turn on hpower bit
     _ctrl2_reg->write(_ctrl2_cache);
   } else {
     odr_reg.write(rate);
-    _ctrl2_cache &= ~0x80;  // turn off hpower bit
+    _ctrl2_cache &= ~0x80; // turn off hpower bit
     _ctrl2_reg->write(_ctrl2_cache);
   }
 }
@@ -259,13 +258,12 @@ void Adafruit_MMC5603::setDataRate(uint16_t rate) {
     @returns The current data rate from 0-255 or 1000
 */
 /**************************************************************************/
-uint16_t Adafruit_MMC5603::getDataRate(void) {
-  return _ctrl2_cache;
-}
+uint16_t Adafruit_MMC5603::getDataRate(void) { return _ctrl2_cache; }
 
 /**************************************************************************/
 /*!
     @brief  Gets the sensor_t data
+    @param  sensor The unified sensor_t object we will populate
 */
 /**************************************************************************/
 void Adafruit_MMC5603::getSensor(sensor_t *sensor) {
@@ -279,7 +277,7 @@ void Adafruit_MMC5603::getSensor(sensor_t *sensor) {
   sensor->sensor_id = _sensorID;
   sensor->type = SENSOR_TYPE_MAGNETIC_FIELD;
   sensor->min_delay = 0;
-  sensor->max_value = 3000;  // 30 gauss = 3000 uTesla
-  sensor->min_value = -3000; // -30 gauss = -3000 uTesla
+  sensor->max_value = 3000;     // 30 gauss = 3000 uTesla
+  sensor->min_value = -3000;    // -30 gauss = -3000 uTesla
   sensor->resolution = 0.00625; // 20 bit 0.00625 uT LSB
 }

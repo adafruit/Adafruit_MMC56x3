@@ -28,8 +28,8 @@
 /*=========================================================================
     I2C ADDRESS/BITS
     -----------------------------------------------------------------------*/
-#define MMC56X3_DEFAULT_ADDRESS 0x30   //!< Default address
-#define MMC56X3_CHIP_ID 0x10       //!< Chip ID from WHO_AM_I register
+#define MMC56X3_DEFAULT_ADDRESS 0x30 //!< Default address
+#define MMC56X3_CHIP_ID 0x10         //!< Chip ID from WHO_AM_I register
 
 /*=========================================================================*/
 
@@ -64,7 +64,7 @@ public:
   void getSensor(sensor_t *);
 
   void reset(void);
-  void magnetSetReset(void) ;
+  void magnetSetReset(void);
 
   void setContinuousMode(bool mode);
   bool isContinuousMode(void);
@@ -74,13 +74,9 @@ public:
   uint16_t getDataRate();
   void setDataRate(uint16_t rate);
 
-
 private:
-  Adafruit_BusIO_Register
-    *_ctrl0_reg=NULL, 
-    *_ctrl1_reg=NULL, 
-    *_ctrl2_reg=NULL,
-    *_status_reg=NULL;
+  Adafruit_BusIO_Register *_ctrl0_reg = NULL, *_ctrl1_reg = NULL,
+                          *_ctrl2_reg = NULL, *_status_reg = NULL;
 
   uint16_t _odr_cache = 0;
   uint8_t _ctrl2_cache = 0;
