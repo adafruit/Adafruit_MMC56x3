@@ -1,21 +1,21 @@
-#include <Wire.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_LIS2MDL.h>
+#include <Adafruit_MMC56x3.h>
 
+/* Assign a unique ID to this sensor at the same time */
+Adafruit_MMC5603 mag = Adafruit_MMC5603(12345);
 
-Adafruit_LIS2MDL mag = Adafruit_LIS2MDL(12345);
-
-void setup(void)
-{
+void setup(void) {
   Serial.begin(115200);
-  Serial.println("Magnetometer Test"); Serial.println("");
+  while (!Serial)
+    delay(10); // will pause Zero, Leonardo, etc until serial console opens
+
+  Serial.println("Adafruit_MMC5603 Magnetometer Compass");
+  Serial.println("");
 
   /* Initialise the sensor */
-  if(!mag.begin())
-  {
-    /* There was a problem detecting the LIS2MDL ... check your connections */
-    Serial.println("Ooops, no LIS2MDL detected ... Check your wiring!");
-    while(1);
+  if (!mag.begin(MMC56X3_DEFAULT_ADDRESS, &Wire)) {  // I2C mode
+    /* There was a problem detecting the MMC5603 ... check your connections */
+    Serial.println("Ooops, no MMC5603 detected ... Check your wiring!");
+    while (1) delay(10);
   }
 }
 
