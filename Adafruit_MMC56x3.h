@@ -59,6 +59,7 @@ public:
   Adafruit_MMC5603(int32_t sensorID = -1);
 
   bool begin(uint8_t i2c_addr = MMC56X3_DEFAULT_ADDRESS, TwoWire *wire = &Wire);
+  void calibrate(void);
 
   bool getEvent(sensors_event_t *);
   void getSensor(sensor_t *);
@@ -84,6 +85,10 @@ private:
   int32_t x; ///< x-axis raw data
   int32_t y; ///< y-axis raw data
   int32_t z; ///< z-axis raw data
+
+  int32_t bx = (int32_t)1 << 19; ///< x-axis bias estimate
+  int32_t by = (int32_t)1 << 19; ///< y-axis bias estimate
+  int32_t bz = (int32_t)1 << 19; ///< z-axis bias estimate
 
   int32_t _sensorID;
 

@@ -38,6 +38,29 @@
  ***************************************************************************/
 
 /***************************************************************************
+ Helper functions
+ ***************************************************************************/
+namespace {
+
+// Reads XYZ
+void readXYZ(Adafruit_I2CDevice *i2c_dev, int32_t* x_out, int32_t* y_out, int32_t* z_out) {
+  uint8_t buffer[9];
+  buffer[0] = MMC56X3_OUT_X_L;
+
+  // read 8 bytes!
+  i2c_dev->write_then_read(buffer, 1, buffer, 9);
+
+  *x_out = (uint32_t)buffer[0] << 12 | (uint32_t)buffer[1] << 4 |
+           (uint32_t)buffer[6] >> 4;
+  *y_out = (uint32_t)buffer[2] << 12 | (uint32_t)buffer[3] << 4 |
+           (uint32_t)buffer[7] >> 4;
+  *z_out = (uint32_t)buffer[4] << 12 | (uint32_t)buffer[5] << 4 |
+           (uint32_t)buffer[8] >> 4;
+}
+
+} // namespace
+
+/***************************************************************************
  CONSTRUCTOR
  ***************************************************************************/
 
@@ -68,6 +91,7 @@ Adafruit_MMC5603::Adafruit_MMC5603(int32_t sensorID) {
  *    @return True if initialization was successful, otherwise false.
  */
 bool Adafruit_MMC5603::begin(uint8_t i2c_address, TwoWire *wire) {
+
   if (!i2c_dev) {
     i2c_dev = new Adafruit_I2CDevice(i2c_address, wire);
   }
@@ -99,6 +123,70 @@ bool Adafruit_MMC5603::begin(uint8_t i2c_address, TwoWire *wire) {
 
   return true;
 }
+
+/*!
+ *    @brief  Estimates and updates the sensor calibration
+ *
+ * The offset is estimated using the method specified in the "USING SET AND
+ * RESET TO REMOVE BRIDGE OFFSET" section of the datasheet. This calibration
+ * will be used to correct subsequent measurements, but is not persisted to
+ * storage. Note that the calibration can vary significantly with temperature.
+ */
+void Adafruit_MMC5603::calibrate(void) {
+  uint8_t old_ctrl1 = _ctrl1_reg->read();
+  uint8_t old_ctrl2 = _ctrl2_cache;
+  Adafruit_BusIO_RegisterBits mag_read_done =
+        Adafruit_BusIO_RegisterBits(_status_reg, 1, 6);
+
+  setContinuousMode(false);
+
+  _ctrl0_reg->write(0x08); // turn on set bit
+  delayMicroseconds(500); // Datasheet says SET operation should take 375us
+
+  // only all axes. Set maximum read time.
+  _ctrl1_reg->write(0x20);
+  _ctrl0_reg->write(0x01); // TM_M trigger
+  delayMicroseconds(6600); // Datasheet says read should take 6.6ms
+
+  while (!mag_read_done.read()) {
+    Serial.println("Not done reading!S");
+    delay(1);
+  }
+  int32_t x_high, y_high, z_high;
+  readXYZ(i2c_dev, &x_high, &y_high, &z_high);
+
+  // enable x,y,z. Set maximum read time.
+  // _ctrl1_reg->write(0x20);
+  _ctrl0_reg->write(0x10); // turn on reset bit
+  delayMicroseconds(500); // Datasheet says measurement should take 375us
+
+  _ctrl0_reg->write(0x01); // TM_M trigger
+  delayMicroseconds(6600); // Datasheet says read should take 6.6ms
+  while (!mag_read_done.read()) {
+    Serial.println("Not done reading!R");
+    delay(1);
+  }
+  int32_t x_low, y_low, z_low;
+  readXYZ(i2c_dev, &x_low, &y_low, &z_low);
+
+  // Since both measurements were made with opposite saturations, the average
+  // is the channel bias.
+  bx = (x_high+x_low)/2;
+  by = (y_high+y_low)/2;
+  bz = (z_high+z_low)/2;
+
+  // Restore old state.
+  _ctrl1_reg->write(old_ctrl1);
+  _ctrl2_reg->write(old_ctrl2);
+  _ctrl2_cache = old_ctrl2;
+
+  // Restore bridge state
+  magnetSetReset();
+  // Reset continuous mode if we were in it.
+  setContinuousMode(isContinuousMode());
+}
+
+
 /*!
  *    @brief  Resets the sensor to an initial state
  */
@@ -197,22 +285,13 @@ bool Adafruit_MMC5603::getEvent(sensors_event_t *event) {
       delay(5);
     }
   }
-  uint8_t buffer[9];
-  buffer[0] = MMC56X3_OUT_X_L;
 
-  // read 8 bytes!
-  i2c_dev->write_then_read(buffer, 1, buffer, 9);
+  readXYZ(i2c_dev, &x, &y, &z);
 
-  x = (uint32_t)buffer[0] << 12 | (uint32_t)buffer[1] << 4 |
-      (uint32_t)buffer[6] >> 4;
-  y = (uint32_t)buffer[2] << 12 | (uint32_t)buffer[3] << 4 |
-      (uint32_t)buffer[7] >> 4;
-  z = (uint32_t)buffer[4] << 12 | (uint32_t)buffer[5] << 4 |
-      (uint32_t)buffer[8] >> 4;
-  // fix center offsets
-  x -= (uint32_t)1 << 19;
-  y -= (uint32_t)1 << 19;
-  z -= (uint32_t)1 << 19;
+  // correct for bias.
+  x -= bx;
+  y -= by;
+  z -= bz;
 
   event->version = sizeof(sensors_event_t);
   event->sensor_id = _sensorID;
