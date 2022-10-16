@@ -43,7 +43,8 @@
 namespace {
 
 // Reads XYZ
-void readXYZ(Adafruit_I2CDevice *i2c_dev, int32_t* x_out, int32_t* y_out, int32_t* z_out) {
+void readXYZ(Adafruit_I2CDevice *i2c_dev, int32_t *x_out, int32_t *y_out,
+             int32_t *z_out) {
   uint8_t buffer[9];
   buffer[0] = MMC56X3_OUT_X_L;
 
@@ -136,12 +137,12 @@ void Adafruit_MMC5603::calibrate(void) {
   uint8_t old_ctrl1 = _ctrl1_reg->read();
   uint8_t old_ctrl2 = _ctrl2_cache;
   Adafruit_BusIO_RegisterBits mag_read_done =
-        Adafruit_BusIO_RegisterBits(_status_reg, 1, 6);
+      Adafruit_BusIO_RegisterBits(_status_reg, 1, 6);
 
   setContinuousMode(false);
 
   _ctrl0_reg->write(0x08); // turn on set bit
-  delayMicroseconds(500); // Datasheet says SET operation should take 375us
+  delayMicroseconds(500);  // Datasheet says SET operation should take 375us
 
   // only all axes. Set maximum read time.
   _ctrl1_reg->write(0x20);
@@ -155,10 +156,8 @@ void Adafruit_MMC5603::calibrate(void) {
   int32_t x_high, y_high, z_high;
   readXYZ(i2c_dev, &x_high, &y_high, &z_high);
 
-  // enable x,y,z. Set maximum read time.
-  // _ctrl1_reg->write(0x20);
   _ctrl0_reg->write(0x10); // turn on reset bit
-  delayMicroseconds(500); // Datasheet says measurement should take 375us
+  delayMicroseconds(500);  // Datasheet says measurement should take 375us
 
   _ctrl0_reg->write(0x01); // TM_M trigger
   delayMicroseconds(6600); // Datasheet says read should take 6.6ms
@@ -171,9 +170,9 @@ void Adafruit_MMC5603::calibrate(void) {
 
   // Since both measurements were made with opposite saturations, the average
   // is the channel bias.
-  bx = (x_high+x_low)/2;
-  by = (y_high+y_low)/2;
-  bz = (z_high+z_low)/2;
+  bx = (x_high + x_low) / 2;
+  by = (y_high + y_low) / 2;
+  bz = (z_high + z_low) / 2;
 
   // Restore old state.
   _ctrl1_reg->write(old_ctrl1);
@@ -185,7 +184,6 @@ void Adafruit_MMC5603::calibrate(void) {
   // Reset continuous mode if we were in it.
   setContinuousMode(isContinuousMode());
 }
-
 
 /*!
  *    @brief  Resets the sensor to an initial state
