@@ -81,7 +81,8 @@ bool Adafruit_MMC5603::begin(uint8_t i2c_address, TwoWire *wire) {
       Adafruit_BusIO_Register(i2c_dev, MMC56X3_PRODUCT_ID);
 
   // make sure we're talking to the right chip
-  if (chip_id.read() != MMC56X3_CHIP_ID) {
+  uint8_t id = chip_id.read();
+  if ((id != MMC56X3_CHIP_ID) && (id != 0x0)) {
     // No MMC56X3 detected ... return false
     return false;
   }
